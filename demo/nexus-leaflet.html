@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<meta charset="utf-8" /> 
+  	<title>NEXUS and Leaflet</title>
+  	
+    <style type="text/css">
+      body { margin: 20px; font-family:sans-serif;}
+      input[type="text"] {
+    		font-size:14px;
+		}
+		button {font-size:14px;}
+    </style>
+    
+    <!-- jquery -->
+    <script src="jquery-1.11.2.min.js"></script>
+
+    <!-- leaflet -->
+	<link rel="stylesheet" href="leaflet-0.7.3/leaflet.css" />
+	<script src="leaflet-0.7.3/leaflet.js"></script>
+	
+	<script>
+		var map;
+		var geojson = null;
+	
+		function onEachFeature(feature, layer) {
+			// does this feature have a property named popupContent?
+			if (feature.properties && feature.properties.popupContent) {
+				layer.bindPopup(feature.properties.popupContent);
+			}
+		}	
+    	
+    	
+    	function create_map() {
+			var mbAttr = 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+					'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+					'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+				mbUrl = 'https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png';
+	
+			var grayscale   = L.tileLayer(mbUrl, {id: 'examples.map-20v6611k', attribution: mbAttr}),
+				streets  = L.tileLayer(mbUrl, {id: 'examples.map-i875mjb7',   attribution: mbAttr});
+	
+			map = L.map('map', { center: [0,0], zoom: 2, layers: [grayscale, streets]} );
+			
+			var baseLayers = {
+				"Grayscale": grayscale,
+				"Terrain": streets
+			};		
+			
+			L.control.layers(baseLayers).addTo(map);
+	
+			L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+				maxZoom: 18,
+				attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+					'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+					'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+				id: 'examples.map-i875mjb7'
+			}).addTo(map);
+		}
+		
+		function add_data(data) {
+		    if (geojson) {
+		    	map.removeLayer(geojson);
+		    }
+			
+			geojson = L.geoJson(data, { 
+			style: function (feature) {
+				return feature.properties && feature.properties.style;
+			},
+			onEachFeature: onEachFeature,
+			}).addTo(map);
+			
+       var southWest = L.latLng(data.bbox[1], data.bbox[0]),
+    	northEast = L.latLng(data.bbox[3], data.bbox[2]),
+    	bounds = L.latLngBounds(southWest, northEast);	
+    	map.fitBounds(bounds);			
+		
+		
+		}
+		
+
+      
+    function nexus() {
+    	var tree = $('#nexus').val();
+    	
+    	$.post('geojson-phylogeny/service.php', 
+    		{ nexus: tree }, 
+    		function(data) {
+				// add GeoJSON to the map
+    			add_data(JSON.parse(data));    			
+    			// dispaly GeoJSON
+    			$('#geojson').html(data);
+    			
+    		 });
+    
+    }
+		</script>
+    
+	</head>
+	<body>
+		<p><a href=".">Back</a></p>
+		<h1>NEXUS and Leaflet</h1>
+		
+		<p>Simple demonstration of creating a geophylogeny in a web map using GeoJSON. 
+		In this example you can paste in a geophylogeny in NEXUS format.</p>
+		
+		<div style="width:100%;padding-bottom:20px;">
+			<table width="100%">
+				<tr>
+					<td width="50%">
+		
+				<p>Enter a NEXUS file with geographical data</p>
+				<select id="examples">
+					<option value="">Choose an example</option>
+					<option value="1">DNA barcode</option>
+					<option value="2"><i>Banza</i> (Hawaii)</option>
+					<option value="3">New Caledonia crickets (<i>Agnotecous</i>)</option>
+				</select>
+				<br/>
+  				<textarea id="nexus" name="nexus" rows="10" cols="60"></textarea>
+  				<br />
+  				<button onclick="nexus();">NEXUS to GeoJSON</button>
+  				
+  					</td>
+  					<td width="50%">
+  					<p>GeoJSON</p>
+  					<textarea id="geojson" name="geojson" rows="10" cols="60" readonly>
+  					</textarea>
+  					</td>
+  				</tr>
+  			</table>
+		</div>
+
+		
+		<div id="map" style="width:100%; height:600px;"></div>	
+		
+		<script>		
+			create_map();
+    
+    $('#examples').change(function() {
+       switch($(this).val()) {
+       		case '1':
+       			$('#nexus').val('#NEXUS \n\nBegin trees;  [Treefile saved Thu Jan 22 17:20:27 2015]\n[!\n>Data file = /Users/rpage/Sites/geojson-phylogeny-demo-o/bold-api/service/tmp/ABFG379-10/ABFG379-10.nex\n>Neighbor-joining search settings:\n>  Ties (if encountered) will be broken systematically\n>  Distance measure = uncorrected ("p")\n>  (Tree is unrooted)\n]\n	Translate\n		1 ABFG518_10,\n		2 ABFG379_10,\n		3 ABFG400_10,\n		4 ABFG342_10,\n		5 ABFG366_10,\n		6 ABFG410_10,\n		7 ABFG488_10,\n		8 ABFG325_10,\n		9 ABFG337_10,\n		10 ABFG499_10,\n		11 ABSRA705_08,\n		12 ABSRA704_08,\n		13 ABGYG821_08,\n		14 ABGYG851_08,\n		15 ABGYG772_08,\n		16 ABGYG841_08,\n		17 ABGYG840_08,\n		18 ABGYG793_08,\n		19 ABGYG823_08,\n		20 ABSRA562_08,\n		21 ABGYH076_12,\n		22 ABGYH096_12,\n		23 ABSRA563_08,\n		24 ABSRA703_08,\n		25 ABSRA1283_10,\n		26 ABSRA1292_10,\n		27 ABSRA1376_10,\n		28 ABSRA253_06,\n		29 ABGYH110_12,\n		30 ABSRA1274_10,\n		31 ABSMS192_06,\n		32 ABSMS277_06,\n		33 ABSMS332_06,\n		34 ABSRA340_06,\n		35 ABSRA094_06,\n		36 ABSRA402_06,\n		37 ABSRA366_06,\n		38 ABSRA326_06,\n		39 ABGYG1026_08,\n		40 ABGYG1018_08,\n		41 ABSRA439_06,\n		42 ABSRA403_06,\n		43 ABSRA367_06,\n		44 ABSRA431_06,\n		45 ABGYG1075_08,\n		46 ABSMS220_06,\n		47 ABSMS380_06,\n		48 ABSMS172_06,\n		49 ABSMS278_06,\n		50 ABSMS364_06,\n		51 ABSRA391_06,\n		52 ABSRA389_06,\n		53 ABSRA388_06,\n		54 ABSRA207_06,\n		55 ABSRA273_06,\n		56 ABSRA095_06,\n		57 ABSRA232_06,\n		58 ABSRA301_06,\n		59 ABSRA155_06,\n		60 ABSRA328_06,\n		61 ABSRA327_06,\n		62 ABSRA152_06,\n		63 ABSRA430_06,\n		64 ABSRA390_06,\n		65 ABGYB758_06,\n		66 ABSRA246_06,\n		67 ABSMS188_06,\n		68 ABSMS221_06,\n		69 ABSMS279_06,\n		70 ABSRA238_06,\n		71 ABGYG822_08,\n		72 ABGYF078_06,\n		73 ABGYG820_08,\n		74 ABGYE734_06,\n		75 ABGYF250_06,\n		76 ABGYA658_06,\n		77 ABGYG850_08,\n		78 ABGYE656_06,\n		79 ABGYE655_06,\n		80 ABGYA297_06,\n		81 ABGYG794_08,\n		82 ABGYG792_08,\n		83 ABGYE707_06,\n		84 ABGYF152_06,\n		85 ABGYG824_08,\n		86 ABGYF079_06,\n		87 ABSMS318_06,\n		88 ABSMS258_06,\n		89 ABGYF080_06,\n		90 ABSA043_06,\n		91 ABSA021_06,\n		92 ABSA020_06,\n		93 ABSMS577_06,\n		94 ABSA028_06,\n		95 ABGYD206_06,\n		96 ABGYB352_06,\n		97 ABGYD509_06,\n		98 ABGYB246_06\n		;\ntree PAUP_1 = [&R] (((((((1:-7.191e-05,(((2:-2.178e-05,((3:-0.000636,5:0.000636):0.000891,8:0.002966):-2.600e-05):6.789e-05,6:0.001468):1.573e-05,7:0.001470):2.364e-05):0.000884,4:0.000601):0.000653,9:0.001711):0.000338,10:0.004740):0.013980,(11:0.001501,((12:-8.106e-05,(20:-4.525e-05,21:4.525e-05):8.106e-05):0.001370,((((((((((13:0,14:0):0,15:0):0,16:0):0,17:0):0,18:0):0,19:0):0.002215,(((((71:-2.465e-05,82:2.465e-05):1.245e-05,73:-1.245e-05):4.239e-06,77:-8.390e-06):2.165e-06,81:-6.360e-06):1.327e-06,85:-5.143e-06):0.003874):0.000536,(((33:2.028e-05,(87:0.001543,88:0.003023):0.003024):0.000112,(((39:0,40:0):0.001432,45:0.001639):0.001288,(((53:-1.333e-05,64:1.333e-05):6.735e-06,58:-6.735e-06):2.293e-06,61:-4.537e-06):0.001794):-0.000137):7.458e-05,((((46:0,47:0):0,48:0):0,50:0):0.000258,67:0.001264):0.001332):0.000924):-3.806e-05,(((((((((31:3.769e-05,(((((32:7.129e-05,((((51:0,52:0):0,55:0):0,60:0):0,63:0):0.001451):-1.253e-05,38:6.006e-05):-9.152e-06,37:5.205e-05):-7.018e-06,36:4.606e-05):-5.582e-06,34:4.140e-05):-4.569e-06):5.201e-06,49:0.001548):-1.208e-05,44:3.682e-05):-3.237e-06,43:3.439e-05):-2.841e-06,42:3.232e-05):-2.523e-06,41:3.053e-05):0.001091,((((74:0,75:0):0,79:0):0,84:0):0.001441,(78:0,83:0):8.118e-05):0.001754):-3.204e-05,((((65:8.151e-05,80:0.001441):5.080e-05,69:0.001471):2.089e-05,76:0.001496):8.952e-05,(72:1.254e-05,(86:-0.000705,89:0.002248):0.000738):0.001422):0.000257):0.000221,68:0.001492):0.000783):0.001626,((((((((((22:0.000457,29:-0.000457):0.000238,30:-0.000238):9.081e-05,23:-0.000170):4.390e-05,24:-0.000129):2.691e-05,25:-0.000104):1.833e-05,27:-8.785e-05):1.339e-05,28:-7.614e-05):2.489e-05,35:0.001475):0.000351,26:0.002687):-2.696e-05,((((((54:-3.521e-06,70:0.001526):1.779e-06,56:-1.779e-06):6.056e-07,57:-1.199e-06):3.093e-07,59:-9.086e-07):1.896e-07,62:-7.347e-07):0.001326,66:0.001812):0.001406):0.001344):1.788e-05):0.001294):0.008494):0.012890,(90:0.015063,(91:0.004989,(92:0.000558,(93:0,94:0):0.000964):0.006866):0.011785):0.016816):0,((95:0,97:0):0.004127,(96:0.000883,98:0.002161):0.003484):0.048767);\nEnd;\nbegin characters;\n	dimensions nchar=2;\n	format datatype = geographic;\n	charstatelabels \n		1 latitude,\n		2 longitude\n		; \nmatrix\nABFG518_10 3.88333 -51.8\nABFG379_10 4.9 -52.3\nABFG400_10 5.73333 -53.9167\nABFG342_10 4.08333 -52.7\nABFG366_10 3.75 -53.0333\nABFG410_10 5.4 -53.65\nABFG488_10 3.88333 -51.8\nABFG325_10 5.05 -53.05\nABFG337_10 4.91667 -52.3667\nABFG499_10 4.56667 -52.4667\nABSRA705_08 3.899 -56.181\nABSRA704_08 3.899 -56.181\nABGYG821_08 2.279 -59.435\nABGYG851_08 2.279 -59.435\nABGYG772_08 2.279 -59.435\nABGYG841_08 2.279 -59.435\nABGYG840_08 2.279 -59.435\nABGYG793_08 2.279 -59.435\nABGYG823_08 2.279 -59.435\nABSRA562_08 3.848 -56.19\nABGYH076_12 3.93 -56.19\nABGYH096_12 3.899 -56.181\nABSRA563_08 3.848 -56.19\nABSRA703_08 3.899 -56.181\nABSRA1283_10 2.17526 -56.788\nABSRA1292_10 2.17526 -56.788\nABSRA1376_10 2.289 -56.607\nABSRA253_06 4.95 -55.183\nABGYH110_12 3.899 -56.181\nABSRA1274_10 2.17526 -56.788\nABSMS192_06 4.661 -57.178\nABSMS277_06 4.469 -56.906\nABSMS332_06 4.469 -56.906\nABSRA340_06 4.478 -57.042\nABSRA094_06 4.95 -55.183\nABSRA402_06 4.478 -57.042\nABSRA366_06 4.478 -57.042\nABSRA326_06 4.478 -57.042\nABGYG1026_08 3.506 -58.233\nABGYG1018_08 3.506 -58.233\nABSRA439_06 4.478 -57.042\nABSRA403_06 4.478 -57.042\nABSRA367_06 4.478 -57.042\nABSRA431_06 4.478 -57.042\nABGYG1075_08 3.506 -58.233\nABSMS220_06 4.714 -57.167\nABSMS380_06 4.469 -56.886\nABSMS172_06 4.661 -57.178\nABSMS278_06 4.469 -56.906\nABSMS364_06 4.469 -56.906\nABSRA391_06 4.478 -57.042\nABSRA389_06 4.478 -57.042\nABSRA388_06 4.478 -57.042\nABSRA207_06 4.95 -55.183\nABSRA273_06 4.478 -57.042\nABSRA095_06 4.95 -55.183\nABSRA232_06 4.95 -55.183\nABSRA301_06 4.478 -57.042\nABSRA155_06 4.95 -55.183\nABSRA328_06 4.478 -57.042\nABSRA327_06 4.478 -57.042\nABSRA152_06 4.933 -55.2\nABSRA430_06 4.478 -57.042\nABSRA390_06 4.478 -57.042\nABGYB758_06 5.15 -58.7\nABSRA246_06 4.95 -55.183\nABSMS188_06 4.714 -57.167\nABSMS221_06 4.714 -57.167\nABSMS279_06 4.469 -56.906\nABSRA238_06 4.95 -55.183\nABGYG822_08 2.279 -59.435\nABGYF078_06 3.183 -58.817\nABGYG820_08 2.279 -59.435\nABGYE734_06 6.5 -58.217\nABGYF250_06 6.5 -58.217\nABGYA658_06 5.383 -57.367\nABGYG850_08 2.279 -59.435\nABGYE656_06 6.5 -58.217\nABGYE655_06 6.5 -58.217\nABGYA297_06 6.233 -58.25\nABGYG794_08 2.279 -59.435\nABGYG792_08 2.279 -59.435\nABGYE707_06 6.5 -58.217\nABGYF152_06 6.5 -58.217\nABGYG824_08 2.279 -59.435\nABGYF079_06 3.183 -58.817\nABSMS318_06 4.469 -56.906\nABSMS258_06 4.469 -56.906\nABGYF080_06 3.183 -58.817\nABSA043_06 7.167 -64.983\nABSA021_06 6.05 -67.417\nABSA020_06 6.05 -67.417\nABSMS577_06 6.05 -67.417\nABSA028_06 6.05 -67.417\nABGYD206_06 4.333 -58.817\nABGYB352_06 4.1 -59.05\nABGYD509_06 4.333 -58.8\nABGYB246_06 4.1 -59.05\n;\nend;\nbegin notes;\n	alttaxnames tax_id = \n	[ABFG518_10] \'BOLD:AAN3804\'\n	[ABFG379_10] \'BOLD:AAN3804\'\n	[ABFG400_10] \'BOLD:AAN3804\'\n	[ABFG342_10] \'BOLD:AAN3804\'\n	[ABFG366_10] \'BOLD:AAN3804\'\n	[ABFG410_10] \'BOLD:AAN3804\'\n	[ABFG488_10] \'BOLD:AAN3804\'\n	[ABFG325_10] \'BOLD:AAN3804\'\n	[ABFG337_10] \'BOLD:AAN3804\'\n	[ABFG499_10] \'BOLD:AAN3804\'\n	[ABSRA705_08] \'BOLD:AAA3831\'\n	[ABSRA704_08] \'BOLD:AAA3831\'\n	[ABGYG821_08] \'BOLD:AAA3831\'\n	[ABGYG851_08] \'BOLD:AAA3831\'\n	[ABGYG772_08] \'BOLD:AAA3831\'\n	[ABGYG841_08] \'BOLD:AAA3831\'\n	[ABGYG840_08] \'BOLD:AAA3831\'\n	[ABGYG793_08] \'BOLD:AAA3831\'\n	[ABGYG823_08] \'BOLD:AAA3831\'\n	[ABSRA562_08] \'BOLD:AAA3831\'\n	[ABGYH076_12] \'BOLD:AAA3831\'\n	[ABGYH096_12] \'BOLD:AAA3831\'\n	[ABSRA563_08] \'BOLD:AAA3831\'\n	[ABSRA703_08] \'BOLD:AAA3831\'\n	[ABSRA1283_10] \'BOLD:AAA3831\'\n	[ABSRA1292_10] \'BOLD:AAA3831\'\n	[ABSRA1376_10] \'BOLD:AAA3831\'\n	[ABSRA253_06] \'BOLD:AAA3831\'\n	[ABGYH110_12] \'BOLD:AAA3831\'\n	[ABSRA1274_10] \'BOLD:AAA3831\'\n	[ABSMS192_06] \'BOLD:AAA3831\'\n	[ABSMS277_06] \'BOLD:AAA3831\'\n	[ABSMS332_06] \'BOLD:AAA3831\'\n	[ABSRA340_06] \'BOLD:AAA3831\'\n	[ABSRA094_06] \'BOLD:AAA3831\'\n	[ABSRA402_06] \'BOLD:AAA3831\'\n	[ABSRA366_06] \'BOLD:AAA3831\'\n	[ABSRA326_06] \'BOLD:AAA3831\'\n	[ABGYG1026_08] \'BOLD:AAA3831\'\n	[ABGYG1018_08] \'BOLD:AAA3831\'\n	[ABSRA439_06] \'BOLD:AAA3831\'\n	[ABSRA403_06] \'BOLD:AAA3831\'\n	[ABSRA367_06] \'BOLD:AAA3831\'\n	[ABSRA431_06] \'BOLD:AAA3831\'\n	[ABGYG1075_08] \'BOLD:AAA3831\'\n	[ABSMS220_06] \'BOLD:AAA3831\'\n	[ABSMS380_06] \'BOLD:AAA3831\'\n	[ABSMS172_06] \'BOLD:AAA3831\'\n	[ABSMS278_06] \'BOLD:AAA3831\'\n	[ABSMS364_06] \'BOLD:AAA3831\'\n	[ABSRA391_06] \'BOLD:AAA3831\'\n	[ABSRA389_06] \'BOLD:AAA3831\'\n	[ABSRA388_06] \'BOLD:AAA3831\'\n	[ABSRA207_06] \'BOLD:AAA3831\'\n	[ABSRA273_06] \'BOLD:AAA3831\'\n	[ABSRA095_06] \'BOLD:AAA3831\'\n	[ABSRA232_06] \'BOLD:AAA3831\'\n	[ABSRA301_06] \'BOLD:AAA3831\'\n	[ABSRA155_06] \'BOLD:AAA3831\'\n	[ABSRA328_06] \'BOLD:AAA3831\'\n	[ABSRA327_06] \'BOLD:AAA3831\'\n	[ABSRA152_06] \'BOLD:AAA3831\'\n	[ABSRA430_06] \'BOLD:AAA3831\'\n	[ABSRA390_06] \'BOLD:AAA3831\'\n	[ABGYB758_06] \'BOLD:AAA3831\'\n	[ABSRA246_06] \'BOLD:AAA3831\'\n	[ABSMS188_06] \'BOLD:AAA3831\'\n	[ABSMS221_06] \'BOLD:AAA3831\'\n	[ABSMS279_06] \'BOLD:AAA3831\'\n	[ABSRA238_06] \'BOLD:AAA3831\'\n	[ABGYG822_08] \'BOLD:AAA3831\'\n	[ABGYF078_06] \'BOLD:AAA3831\'\n	[ABGYG820_08] \'BOLD:AAA3831\'\n	[ABGYE734_06] \'BOLD:AAA3831\'\n	[ABGYF250_06] \'BOLD:AAA3831\'\n	[ABGYA658_06] \'BOLD:AAA3831\'\n	[ABGYG850_08] \'BOLD:AAA3831\'\n	[ABGYE656_06] \'BOLD:AAA3831\'\n	[ABGYE655_06] \'BOLD:AAA3831\'\n	[ABGYA297_06] \'BOLD:AAA3831\'\n	[ABGYG794_08] \'BOLD:AAA3831\'\n	[ABGYG792_08] \'BOLD:AAA3831\'\n	[ABGYE707_06] \'BOLD:AAA3831\'\n	[ABGYF152_06] \'BOLD:AAA3831\'\n	[ABGYG824_08] \'BOLD:AAA3831\'\n	[ABGYF079_06] \'BOLD:AAA3831\'\n	[ABSMS318_06] \'BOLD:AAA3831\'\n	[ABSMS258_06] \'BOLD:AAA3831\'\n	[ABGYF080_06] \'BOLD:AAA3831\'\n	[ABSA043_06] \'BOLD:AAA3834\'\n	[ABSA021_06] \'BOLD:AAA3832\'\n	[ABSA020_06] \'BOLD:AAA3832\'\n	[ABSMS577_06] \'BOLD:AAA3832\'\n	[ABSA028_06] \'BOLD:AAA3832\'\n	[ABGYD206_06] \'BOLD:AAA3833\'\n	[ABGYB352_06] \'BOLD:AAA3833\'\n	[ABGYD509_06] \'BOLD:AAA3833\'\n	[ABGYB246_06] \'BOLD:AAA3833\'\n;\nend;\n');
+       			break;
+       		case '2':
+       		$('#nexus').val('#NEXUS \n\n[ Data from Shapiro, L. H., Strazanac, J. S., & Roderick, G. K. (2006, October). Molecular phylogeny of Banza (Orthoptera: Tettigoniidae), the endemic katydids of the Hawaiian Archipelago. Molecular Phylogenetics and Evolution. Elsevier BV. doi:10.1016/j.ympev.2006.04.006 ]\n\nBegin trees;  [Treefile saved Tue Jun  5 11:12:27 2007]\n[!\n>Data file = /Users/rpage/Desktop/Data/Banza/coi.nex\n>Neighbor-joining search settings:\n>  Ties (if encountered) will be broken systematically\n>  Distance measure = uncorrected ("p")\n>  (Tree is unrooted)\n]\n	Translate\n		1 B._parvula_B,\n		2 B._parvula_A,\n		3 B._kauaiensis_B,\n		4 B._kauaiensis_A,\n		5 B._molokaiensis_B,\n		6 B._molokaiensis_A,\n		7 B._deplanata_B,\n		8 B._deplanata_A,\n		9 B._unica_B,\n		10 B._unica_A,\n		11 B._brunnea_B,\n		12 B._brunnea_A,\n		13 B._pilimauiensis_B,\n		14 B._pilimauiensis_A,\n		15 B._mauiensis_B,\n		16 B._mauiensis_A,\n		17 B._nitida_B,\n		18 B._nitida_A,\n		19 B._nitida_C,\n		20 DQ649489,\n		21 B._nihoa_B,\n		22 B._nihoa_A,\n		23 DQ649496,\n		24 DQ649490\n		;\ntree PAUP_1 = [&U] ((((((1:0.003181,(2:0.020173,(3:0.004824,4:0.003941):0.013348):0.004084):0.011951,((5:0,6:0):0.028291,(7:0,8:0):0.031470):0.000672):0.007252,(((11:0.002641,12:0.002143):0.018060,((13:0.002093,14:0.002688):0.002807,(15:0.000473,16:0.000324):0.003169):0.016605):0.002041,((17:0.007032,18:0.008551):0.017162,19:0.025889):0.002026):0.014358):0.002074,(9:0.017669,10:0.014463):0.029122):0.029830,(21:0.000261,22:-0.000261):0.059528):0.007831,20:0.062228,(23:0.098848,24:0.100637):0.018084);\n\nEnd;\n\nbegin characters;\n	dimensions nchar=2;\n	format datatype = geographic;\n	charstatelabels \n		1 latitude,\n		2 longitude\n		; \nmatrix\nB._nihoa_A	23.06222222	-161.9261111\nB._nihoa_B	23.06222222	-161.9261111\nB._kauaiensis_A	21.975	-159.4661111\nB._kauaiensis_B	22.15388889	-159.625\nB._unica_A	21.33722222	-157.8177778\nB._unica_B	21.41638889	-158.1036111\nB._parvula_A	21.44472222	-158.1013889\nB._parvula_B	21.54916667	-158.1869444\nB._molokaiensis_A	21.10972222	-156.9027778\nB._molokaiensis_B	21.10972222	-156.9027778\nB._deplanata_A	20.81472222	-156.8758333\nB._deplanata_B	20.81472222	-156.8705556\nB._brunnea_A	20.93722222	-156.6194444\nB._brunnea_B	20.855	-156.6033333\nB._mauiensis_A	20.845	-156.5572222\nB._mauiensis_B	20.845	-156.5572222\nB._pilimauiensis_A	20.81777778	-156.2302778\nB._pilimauiensis_B	20.81777778	-156.2302778\nB._nitida_A	19.50888889	-155.8627778\nB._nitida_B	19.57055556	-155.1886111\nB._nitida_C	20.12916667	-155.7691667\n;\nend;\n');
+       			break;
+       		case '3':
+       			$('#nexus').val('#NEXUS \n\nBegin trees;  [Treefile saved Thu Jan 22 06:45:10 2015]\n[!\n>Data file = /Users/rpage/Sites/phyloinformatics/blast/tmp/C171J9NR01N.nex\n>Neighbor-joining search settings:\n>  Ties (if encountered) will be broken systematically\n>  Distance measure = uncorrected ("p")\n>  (Tree is unrooted)\n]\nTranslate\n1 JX897432 ,\n2 JX897433 ,\n3 JX897431 ,\n4 JX897429 ,\n5 JX897430 ,\n6 JX897438 ,\n7 JX897437 ,\n8 JX897434 ,\n9 JX897426 ,\n10 JX897427,\n11 JX897435,\n12 JX897422,\n13 JX897425,\n14 JX897421,\n15 JX897423,\n16 JX897412,\n17 JX897419,\n18 JX897418,\n19 JX897415,\n20 JX897413,\n21 JX897420,\n22 JX897414,\n23 JX897417,\n24 JX897411,\n25 JX897416,\n26 JX897407,\n27 JX897410,\n28 JX897405\n\n;\ntree PAUP_1 = [&R] ((((((((((1:0.002384,(2:0.003921,3:0.003166):0.000763):0.001385,5:0.005957):0.001008,4:0.008459):0.012214,8:0.017078):-0.000182,(6:0.008358,(7:0.009021,11:0.020193):-0.000499):0.005645):0.003988,(9:0.002904,10:0.004172):0.021087):0.001310,(12:0.004372,((13:0.002135,15:0.003368):0.002158,14:0.004132):0.000936):0.026036):0.002587,21:0.038175):0.004142,(((16:0.002290,((19:0.001112,22:0.002034):0.000803,20:0.003126):0.000849):0.009380,(((17:6.867e-06,23:0.003144):0.000149,18:0.001423):0.000417,25:0.002712):0.014684):0.021900,((24:0.017216,27:0.020629):0.010605,26:0.028845):0.008440):0.003950):0.018985,28:0.059789));\n\nEnd;\n\nbegin characters;\n	dimensions nchar=2;\n	format datatype = geographic;\n	charstatelabels \n		1 latitude,\n		2 longitude\n		; \nmatrix\nJX897417	-21.65	165.78\nJX897419	-21.57	165.77\nJX897416	-21.6	165.97\n[JX897405	-15.16	166.94]\nJX897429	-22.59	167.52\nJX897432	-21.73	165.9\nJX897430	-21.58	165.79\nJX897434	-21.43	165.46\nJX897438	-22.18	166.51\nJX897422	-22.18	166.51\nJX897410	-22.35	166.97\nJX897420	-22.59	167.52\nJX897435	-22.07	166.18\nJX897426	-22.28	166.89\nJX897427	-22.25	166.829\nJX897423	-22.1	166.66\nJX897411	-22.09	166.63\nJX897431	-21.75	166\nJX897414	-20.97	165.28\nJX897412	-20.4	164.53\nJX897415	-21.18	165.3\nJX897407	-22.25	166.83\nJX897425	-21.65	165.78\n;\nend;\n\nbegin notes;\n	alttaxnames tax_id = \n[JX897432]	JX897432\n[JX897433]	JX897433\n[JX897431]	JX897431\n[JX897429]	JX897429\n[JX897430]	JX897430\n[JX897438]	JX897438\n[JX897437]	JX897437\n[JX897434]	JX897434\n[JX897426]	Agnotecous_azurensis\n[JX897427]	Agnotecous_azurensis\n[JX897435]	JX897435\n[JX897422]	Agnotecous_tapinopus\n[JX897425]	JX897425\n[JX897421]	Agnotecous_tapinopus\n[JX897423]	Agnotecous_azurensis\n[JX897412]	Agnotecous_obscurus\n[JX897419]	Agnotecous_albifrons\n[JX897418]	Agnotecous_albifrons\n[JX897415]	Agnotecous_obscurus\n[JX897413]	Agnotecous_obscurus\n[JX897420]	JX897420\n[JX897414]	Agnotecous_obscurus\n[JX897417]	Agnotecous_albifrons\n[JX897411]	JX897411\n[JX897416]	Agnotecous_albifrons\n[JX897407]	JX897407\n[JX897410]	JX897410\n[JX897405]	JX897405\n\n;\nend;\n\n');
+       			break;       			
+       		default:
+       		$('#nexus').val('');
+       			break;
+       	}
+});
+       
+		
+			
+		</script>
+	
+	</body>
+</html>
