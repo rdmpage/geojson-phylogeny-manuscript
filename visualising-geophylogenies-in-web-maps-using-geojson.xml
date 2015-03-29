@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD Journal Publishing DTD v3.0 20080202//EN" "journalpublishing3.dtd">
+<article article-type="research-article" xml:lang="en" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?origin annotum?>
+	<front>
+		<journal-meta>
+			<journal-id journal-id-type="publisher-id">plos</journal-id>
+			<journal-title-group>
+					<journal-title>PLoS Currents: Tree of Life</journal-title>
+				</journal-title-group>
+			<issn pub-type="epub">2157-3999</issn>
+			<publisher>
+				<publisher-name>Public Library of Science</publisher-name>
+				<publisher-loc>San Francisco, USA</publisher-loc>
+					</publisher>
+		</journal-meta>
+		<article-meta>
+			
+			
+			<title-group>
+				<article-title>Visualising geophylogenies in web maps using GeoJSON</article-title>
+			</title-group>
+			
+			
+			<pub-date pub-type="epub">
+				<day>26</day>
+				<month>3</month>
+				<year>2015</year>
+			</pub-date>
+						
+			<abstract>
+				<p>This article describes a simple tool to display geophylogenies on web maps including Google Maps and OpenStreetMap. The tool reads a NEXUS format file that includes geographic information, and outputs a GeoJSON format file that can be displayed in a web map application.</p>
+			</abstract>
+			
+			<funding-group>
+					<funding-statement>This work is funded by the University of Glasgow.</funding-statement>
+					</funding-group>
+			
+		</article-meta>
+	</front>
+	<body>
+		
+<sec><title>Introduction</title>
+<p>The increasing number of georeferenced sequences in GenBank <xref ref-type="bibr" rid="ref1">1</xref> and the growth of DNA barcoding <xref ref-type="bibr" rid="ref2">2</xref> means that the raw material to create geophylogenies <xref ref-type="bibr" rid="ref3">3</xref> is readily available. However, constructing visualisations of phylogenies and geography together can be tedious. Several early efforts at visualising geophylogenies focussed on using existing GIS software <xref ref-type="bibr" rid="ref4">4</xref>, or tools such as Google Earth <xref ref-type="bibr" rid="ref5">5</xref><xref ref-type="bibr" rid="ref6">6</xref><xref ref-type="bibr" rid="ref7">7</xref> . While the 3D visualisations enabled by Google Earth are engaging, it's not clear that they are easy to interpret. Another tool, GenGIS <xref ref-type="bibr" rid="ref12">12</xref><xref ref-type="bibr" rid="ref13">13</xref> , supports 2D visualisations where the phylogeny is drawn flat on the map, avoiding some of the problems of Google Earth visualisations. However, like Google Earth, GenGIS requires the user to download and install additional software on their computer.</p>
+<p>By comparison, web maps such as Google Maps <xref ref-type="bibr" rid="ref15">15</xref> and OpenStreetMap <xref ref-type="bibr" rid="ref16">16</xref> are becoming ubiquitous and work in most modern web browsers. They support displaying user-supplied data, including geometrical information encoded in formats such as GeoJSON, making them a light weight alternative to 3D geophylogeny viewers. This paper describes a tool that makes use of the GeoJSON format and the capabilities of web maps to create quick and simple visualisations of geophylogenies.</p></sec><sec><title>2D layout of geophylogenies</title>
+<p>The following discussion assumes that we have a phylogeny, and that for most (if not all) of the OTUs in that phylogeny are associated with a point locality for which we know the latitude and longitude.</p>
+<p>In order to draw a geophylogeny on a web map we need to solve three problems. The first, relatively trivial problem is to place the the localities of the OTUs on the map (I shall refer to these as “occurrences”).</p>
+<p>The second is to draw the phylogeny. Typically when drawing an evolutionary tree we compute <italic>x</italic> and <italic>y</italic> coordinates for a device where these coordinates have equal units and are linear in both horizontal and vertical dimensions, such as a computer screen or printer. In web maps coordinates are expressed in terms of latitude and longitude, and in the widely-used "web mercator" projection the <italic>y</italic>-axis (latitude) is non-linear. Furthermore, on a web map the user can zoom in and out, so pixel-based coordinates only make sense with respect to a particular zoom level.</p>
+<p><fig><label>Web map tile</label><caption>
+<p>The single 256 × 256 pixel tile representing the globe a zoom level 0 showing the pixel coordinates for the top left corner, the centre (corresponding to longitude 0, latitude 0), and the bottom right. Tile image from <ext-link ext-link-type="uri" xlink:href="http://a.tile.openstreetmap.org/0/0/0.png">http://a.tile.openstreetmap.org/0/0/0.png</ext-link>.</p>
+</caption>
+<media xlink:href="http://currents.plos.org/treeoflife/files/2015/03/tile-150x150.png"><uri xlink:href="http://currents.plos.org/treeoflife/files/2015/03/tile.png"></uri><alt-text></alt-text><long-desc></long-desc><permissions><copyright-statement></copyright-statement><copyright-holder></copyright-holder><license license-type="creative-commons"><license-p></license-p></license></permissions></media> </fig></p>
+<p>Web maps use “tiles” of a fixed size to represent the globe. Each tile is typically 256 × 256 pixels in size, and the number of tiles comprising a map is 2<sup><italic>zoom</italic></sup> where <italic>zoom</italic> is the zoom level. At zoom level 0 the map comprises a single tile (Fig. 1), at zoom level 1 the map comprises 4 tiles, and zoom level 2 eight tiles, and so on. To accommodate the web mercator projection, we first compute a geographic bounding box for the tree based on the bounding box that encloses the occurrences, then offset that box so that so that the tree is drawn, say below, the occurrences. We can then convert the longitude <inline-graphic xlink:href="https://chart.googleapis.com/chart?cht=tx&amp;chf=bg,s,FFFFFF00&amp;chco=000000&amp;chl=%5Clambda"><alt-text></alt-text></inline-graphic> and latitude <inline-graphic xlink:href="https://chart.googleapis.com/chart?cht=tx&amp;chf=bg,s,FFFFFF00&amp;chco=000000&amp;chl=%5Cphi"><alt-text></alt-text></inline-graphic> coordinates of the bounding box to pixels <italic>x</italic> and <italic>y</italic> at zoom level 0 using the following formulae:</p>
+<p><inline-graphic xlink:href="https://chart.googleapis.com/chart?cht=tx&amp;chf=bg,s,FFFFFF00&amp;chco=000000&amp;chl=x%20%3D%20128%20%2B%20(%5Clambda%20%5Cfrac%7B256%7D%7B360%7D)"><alt-text></alt-text></inline-graphic></p>
+<p><inline-graphic xlink:href="https://chart.googleapis.com/chart?cht=tx&amp;chf=bg,s,FFFFFF00&amp;chco=000000&amp;chl=y%20%3D%20%5Cfrac%7B1%7D%7B2%7Dln%5Cleft%20(%5Cfrac%7B1%2Bsin%5Cphi%7D%7B1-sin%5Cphi%7D%20%5Cright%20)"><alt-text></alt-text></inline-graphic></p>
+<p>Note that the maximum latitude that can be displayed in the web mercator projection is 85.051129° north and south. The tree drawing is then laid out within that bounding box, with the nodes positioned in terms of pixels on the tile. Once pixel coordinates have been computed for the whole tree, they are then converted back to latitude and longitude values:</p>
+<p><inline-graphic xlink:href="https://chart.googleapis.com/chart?cht=tx&amp;chf=bg,s,FFFFFF00&amp;chco=000000&amp;chl=%5Clambda%20%3D%20(x%20-%20128)%5Cfrac%7B360%7D%7B256%7D"><alt-text></alt-text></inline-graphic></p>
+<p><inline-graphic xlink:href="https://chart.googleapis.com/chart?cht=tx&amp;chf=bg,s,FFFFFF00&amp;chco=000000&amp;chl=%5Cphi%20%3D%20(2%20tan%5E%7B-1%7D(e%5E%7B(y%20-%20128)%5Cfrac%7B-256%7D%7B2%5Cpi%7D%7D)%20-%20%5Cfrac%7B1%7D%7B2%7D%5Cpi)%5Cfrac%7B180%7D%7B%5Cpi%7D"><alt-text></alt-text></inline-graphic></p>
+<p>Expressing the tree in terms of latitude and longitude coordinates means that the rendering of the tree as the user zooms in and out is handled automatically by the web map application.</p>
+<p>If we want to provide the user with a visual connection between each occurrence on the map and the location of the corresponding OTU in the phylogeny, we can draw a line connecting the two. These lines may criss-cross creating visual clutter, reducing this clutter is the third problem. To make the diagram more comprehensible, I adopt the approach used by GenGIS <xref ref-type="bibr" rid="ref12">12</xref><xref ref-type="bibr" rid="ref13">13</xref> to reorder the nodes in the tree to minimise the number of crossings <xref ref-type="bibr" rid="ref8">8</xref>. As an additional feature, if a taxon is represented by more than one occurrence, we can enclose the set of occurrences by a convex polygon to represent the range of that taxon.</p>
+<p>Having computed a layout, we then need to render that on a web map. There are a number of different web maps available, each with their own API. Rather than tie the visualisation to a particular API, we can use a standardised output format, such as GeoJSON, to encode the layout, so that users can pick which web map they wish to use for the visualisation.</p></sec><sec><title>GeoJSON</title>
+<p>GeoJSON <xref ref-type="bibr" rid="ref17">17</xref> is a format for encoding geographic data in JSON (JavaScript Object Notation). It includes various geometry types (such as Point, LineString, and Polygon), and is supported by a number of online mapping tools, including Google Maps <xref ref-type="bibr" rid="ref15">15</xref> and Leaflet <xref ref-type="bibr" rid="ref18">18</xref> . A GeoJSON document comprises a set of one or more features, each of which has a geometry and additional properties. Using the geometry types <monospace>Point</monospace>,  <monospace>LineString</monospace>, and <monospace>Polygon</monospace> we can encode occurrences (<monospace>Point</monospace>), the tree (a set of <monospace>LineString</monospace>), and taxon distributions (<monospace>Polygon</monospace>) in GeoJSON, then have the entire visualisation rendered by the web application. The GeoJSON specification does not, by itself, include any information on how to display the objects encoded in a GeoJSON document (e.g., what colour to use for a line), but some informal standards have emerged, such as storing CSS styles as properties.</p></sec><sec><title>Input format</title>
+<p>In order to create the visualisation we also need a way to input a phylogeny and the geographic localities. The approach taken here is to use the NEXUS format <xref ref-type="bibr" rid="ref9">9</xref> , and the "GEOGRAPHIC" datatype introduced by the Mesquite Cartographer package <xref ref-type="bibr" rid="ref14">14</xref> . While some might argue that XML represents the future of phylogenetic file formats <xref ref-type="bibr" rid="ref10">10</xref> , NEXUS is easy to manually edit and hence facilitates debugging and exploring the software. Given a set of OTUs, the tool expects a NEXUS file with a “TREES” block describing a tree, followed by a “CHARACTERS” block encoding the location of each OTU. Each OTU is typically a DNA sequence. Sets of sequence may belong to the same taxon (e.g., a species or a DNA barcode BIN). Following Mesquite, this information can be stored in an “ALTTAXNAMES” command in a “NOTES” block.</p>
+<p>Below is a NEXUS file for the widely used <italic>Banza</italic> example <xref ref-type="bibr" rid="ref11">11</xref><xref ref-type="bibr" rid="ref19">19</xref> :</p>
+<p><preformat>#NEXUS[ Data from Shapiro, L. H., Strazanac, J. S., &amp; Roderick, G. K. (2006, October). Molecular phylogeny of Banza (Orthoptera: Tettigoniidae), the endemic katydids of the Hawaiian Archipelago. Molecular Phylogenetics and Evolution. Elsevier BV. doi:10.1016/j.ympev.2006.04.006 ]Begin trees; [!&gt;Data file = /Users/rpage/Desktop/Data/Banza/coi.nex&gt;Neighbor-joining search settings:&gt; Ties (if encountered) will be broken systematically&gt; Distance measure = uncorrected ("p")&gt; (Tree is unrooted)] Translate 1 B._parvula_B, 2 B._parvula_A, 3 B._kauaiensis_B, 4 B._kauaiensis_A, 5 B._molokaiensis_B, 6 B._molokaiensis_A, 7 B._deplanata_B, 8 B._deplanata_A, 9 B._unica_B, 10 B._unica_A, 11 B._brunnea_B, 12 B._brunnea_A, 13 B._pilimauiensis_B, 14 B._pilimauiensis_A, 15 B._mauiensis_B, 16 B._mauiensis_A, 17 B._nitida_B, 18 B._nitida_A, 19 B._nitida_C, 20 DQ649489, 21 B._nihoa_B, 22 B._nihoa_A, 23 DQ649496, 24 DQ649490 ; tree PAUP_1 = [&amp;U] ((((((1:0.003181,(2:0.020173,(3:0.004824,4:0.003941):0.013348):0.004084):0.011951,((5:0,6:0):0.028291,(7:0,8:0):0.031470):0.000672):0.007252,(((11:0.002641,12:0.002143):0.018060,((13:0.002093,14:0.002688):0.002807,(15:0.000473,16:0.000324):0.003169):0.016605):0.002041,((17:0.007032,18:0.008551):0.017162,19:0.025889):0.002026):0.014358):0.002074,(9:0.017669,10:0.014463):0.029122):0.029830,(21:0.000261,22:-0.000261):0.059528):0.007831,20:0.062228,(23:0.098848,24:0.100637):0.018084);End;begin characters; dimensions nchar=2; format datatype = geographic; charstatelabels 1 latitude, 2 longitude ; matrix B._nihoa_A 23.06222222 -161.9261111 B._nihoa_B 23.06222222 -161.9261111 B._kauaiensis_A 21.975 -159.4661111 B._kauaiensis_B 22.15388889 -159.625 B._unica_A 21.33722222 -157.8177778 B._unica_B 21.41638889 -158.1036111 B._parvula_A 21.44472222 -158.1013889 B._parvula_B 21.54916667 -158.1869444 B._molokaiensis_A 21.10972222 -156.9027778 B._molokaiensis_B 21.10972222 -156.9027778 B._deplanata_A 20.81472222 -156.8758333 B._deplanata_B 20.81472222 -156.8705556 B._brunnea_A 20.93722222 -156.6194444 B._brunnea_B 20.855 -156.6033333 B._mauiensis_A 20.845 -156.5572222 B._mauiensis_B 20.845 -156.5572222 B._pilimauiensis_A 20.81777778 -156.2302778 B._pilimauiensis_B 20.81777778 -156.2302778 B._nitida_A 19.50888889 -155.8627778 B._nitida_B 19.57055556 -155.1886111 B._nitida_C 20.12916667 -155.7691667 ;end;</preformat></p></sec><sec><title>Implementation</title>
+<p>I have implemented a NEXUS to GeoJSON converter using PHP. The code parses the NEXUS file, computes a bounding box based on the distribution of the OTUs, draws the tree, and exports the result in GeoJSON. The code is available on github, and comes with examples of visualisation the GeoJSON using Google Maps and Leaflet.</p>
+<p><fig><label>Geophylogeny for South American marsupial</label><caption>
+<p>Geophylogeny for DNA barcodes for the marsupial Proechimys guyannensis diosplayed on Google Maps, showing two distinct clusters that are geographically allopatric (data from BOLD).</p>
+</caption>
+<media xlink:href="http://currents.plos.org/treeoflife/files/2015/03/googlemaps-150x150.png"><uri xlink:href="http://currents.plos.org/treeoflife/files/2015/03/googlemaps.png"></uri><alt-text></alt-text><long-desc></long-desc><permissions><copyright-statement></copyright-statement><copyright-holder></copyright-holder><license license-type="creative-commons"><license-p></license-p></license></permissions></media> </fig></p>
+<p><fig><label>Geophylogeny for Hawaiian katydids</label><caption>
+<p>Geophylogeny for Hawaiian katydids (genus Banza) displayed using the Leaflet framework with map tiles from OpenStreetMap.</p>
+</caption>
+<media xlink:href="http://currents.plos.org/treeoflife/files/2015/03/leaflet-150x150.png"><uri xlink:href="http://currents.plos.org/treeoflife/files/2015/03/leaflet.png"></uri><alt-text></alt-text><long-desc></long-desc><permissions><copyright-statement></copyright-statement><copyright-holder></copyright-holder><license license-type="creative-commons"><license-p></license-p></license></permissions></media> </fig></p>
+<p></p></sec><sec><p>At present the method described here requires a middle layer (written in PHP) that resides on a web server and converts the NEXUS file to GeoJSON. An obvious extension would be to port that code to Javascript and have the entire tool function within the web-browser client.</p>
+<p>Although lacking some of the functionality of more specialised software such as GenGIS, an advantage of a web map-based tool is that it brings phylogenies into an environment already familiar to users of biodiversity data, such as the GBIF portal. Many users will have already encountered points on maps, and layers (e.g., of environmental data, or estimated species distributions). By representing phylogeny in GeoJSON we open the way for phylogenetic information to be incorporated into these maps.</p>
+<p>Another reason GeoJSON is attractive is that because it is a JSON document it could be stored and indexed in a document database such as CouchDB. Hence we could imagine being able to quickly build a database of geophylogenies that can be queried both taxonomically and spatially. This would be one way to tackle the challenge of Kidd’s call for a “map of life”<xref>3</xref> .</p></sec>
+	
+	</body>
+	<back>
+		
+		
+					<ref-list>
+				<title>References</title>
+			<ref id="ref1">
+				<label>ref1</label>
+				<mixed-citation>Marques AC, Maronna MM, Collins AG. Putting GenBank data on the map. Science. 2013 Sep 20;341(6152):1341. PubMed PMID:24052287.
+					
+						<pub-id pub-id-type="pmid">24052287</pub-id>
+				</mixed-citation>
+			</ref>
+			<ref id="ref2">
+				<label>ref2</label>
+				<mixed-citation>Ratnasingham S, Hebert PD. A DNA-based registry for all animal species: the barcode index number (BIN) system. PLoS One. 2013;8(7):e66213. PubMed PMID:23861743.
+					
+						<pub-id pub-id-type="pmid">23861743</pub-id>
+				</mixed-citation>
+			</ref>
+			<ref id="ref3">
+				<label>ref3</label>
+				<mixed-citation>Kidd DM. Geophylogenies and the Map of Life. Syst Biol. 2010 Dec;59(6):741-52. PubMed PMID:20833950.
+					
+						<pub-id pub-id-type="pmid">20833950</pub-id>
+				</mixed-citation>
+			</ref>
+			<ref id="ref4">
+				<label>ref4</label>
+				<mixed-citation>Kidd DM, Liu X. geophylobuilder 1.0: an arcgis extension for creating &#039;geophylogenies&#039;. Mol Ecol Resour. 2008 Jan;8(1):88-91. PubMed PMID:21585723.
+					
+						<pub-id pub-id-type="pmid">21585723</pub-id>
+				</mixed-citation>
+			</ref>
+			<ref id="ref5">
+				<label>ref5</label>
+				<mixed-citation>Arrigo, N., Albert, L. P., Mickelson, P. G., &amp; Barker, M. S. (2012, September 21). Quantitative visualization of biological data in Google Earth using R2G2, an R CRAN package. Molecular Ecology Resources. doi:10.1111/1755-0998.12012
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref6">
+				<label>ref6</label>
+				<mixed-citation>Janies D, Hill AW, Guralnick R, Habib F, Waltari E, Wheeler WC. Genomic analysis and geographic visualization of the spread of avian influenza (H5N1). Syst Biol. 2007 Apr;56(2):321-9. PubMed PMID:17464886.
+					
+						<pub-id pub-id-type="pmid">17464886</pub-id>
+				</mixed-citation>
+			</ref>
+			<ref id="ref7">
+				<label>ref7</label>
+				<mixed-citation>Hill, A. W., &amp; Guralnick, R. P. (2010, June 30). GeoPhylo: an online tool for developing visualizations of phylogenetic trees in geographic space. Ecography. doi:10.1111/j.1600-0587.2010.06312.x
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref8">
+				<label>ref8</label>
+				<mixed-citation>Barth, W., Mutzel, P., &amp; Jünger, M. (2004). Simple and Efficient Bilayer Cross Counting. J. Graph Algorithms Appl. Journal of Graph Algorithms and Applications. doi:10.7155/jgaa.00088
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref9">
+				<label>ref9</label>
+				<mixed-citation>Maddison, D. R., Swofford, D. L., &amp; Maddison, W. P. (1997, December 1). Nexus: An Extensible File Format for Systematic Information. Systematic Biology. Oxford University Press (OUP). doi:10.1093/sysbio/46.4.590
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref10">
+				<label>ref10</label>
+				<mixed-citation>Cranston, K., Harmon, L. J., O’Leary, M. A., &amp; Lisle, C. (2014). Best Practices for Data Sharing in Phylogenetic Research. PLoS Curr. Public Library of Science (PLoS). doi:10.1371/currents.tol.bf01eff4a6b60ca4825c69293dc59645
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref11">
+				<label>ref11</label>
+				<mixed-citation>Shapiro, L. H., Strazanac, J. S., &amp; Roderick, G. K. (2006, October). Molecular phylogeny of Banza (Orthoptera: Tettigoniidae), the endemic katydids of the Hawaiian Archipelago. Molecular Phylogenetics and Evolution. Elsevier BV. doi:10.1016/j.ympev.2006.04.006
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref12">
+				<label>ref12</label>
+				<mixed-citation>Parks DH, Mankowski T, Zangooei S, Porter MS, Armanini DG, Baird DJ, Langille MG, Beiko RG. GenGIS 2: geospatial analysis of traditional and genetic biodiversity, with new gradient algorithms and an extensible plugin framework. PLoS One. 2013;8(7):e69885. PubMed PMID:23922841. doi:10.1371/journal.pone.0069885
+					
+						<pub-id pub-id-type="pmid">23922841</pub-id>
+				</mixed-citation>
+			</ref>
+			<ref id="ref13">
+				<label>ref13</label>
+				<mixed-citation>Parks, D. H., Porter, M., Churcher, S., Wang, S., Blouin, C., Whalley, J., Brooks, S., et al. (2009, July 27). GenGIS: A geospatial information system for genomic data. Genome Research. Cold Spring Harbor Laboratory Press. doi:10.1101/gr.095612.109
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref14">
+				<label>ref14</label>
+				<mixed-citation>Maddison, D.R., &amp; W.P. Maddison. 2014. Cartographer, a Mesquite package for plotting geographic data. Version 1.41.
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref15">
+				<label>ref15</label>
+				<mixed-citation>Google Maps JavaScript API v3
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref16">
+				<label>ref16</label>
+				<mixed-citation>OpenStreetMap
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref17">
+				<label>ref17</label>
+				<mixed-citation>GeoJSON
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref18">
+				<label>ref18</label>
+				<mixed-citation>Leaflet
+					
+				</mixed-citation>
+			</ref>
+			<ref id="ref19">
+				<label>ref19</label>
+				<mixed-citation>Google Earth phylogenies
+					
+				</mixed-citation>
+			</ref>
+		</ref-list>
+		</back>
+		
+		</article>
