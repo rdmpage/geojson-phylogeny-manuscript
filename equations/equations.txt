@@ -1,0 +1,14 @@
+Equations
+=========
+
+\lambda
+
+\phi
+
+\lambda = (x - 128)\frac{360}{256}
+
+y = \frac{1}{2}ln\left (\frac{1+sin\phi}{1-sin\phi} \right )
+
+\lambda = (x - 128)\frac{360}{256}
+
+\phi = (2 tan^{-1}(e^{(y - 128)\frac{-256}{2\pi}}) - \frac{1}{2}\pi)\frac{180}{\pi}
