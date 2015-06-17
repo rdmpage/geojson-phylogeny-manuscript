@@ -53,7 +53,8 @@
                     }
                     // Wrap y (latitude) in a like manner if you want to enable vertical infinite scroll
  
-                    return "http://a.tile3.opencyclemap.org/landscape/" + zoom + "/" + x + "/" + coord.y + ".png";
+                    //return "http://a.tile3.opencyclemap.org/landscape/" + zoom + "/" + x + "/" + coord.y + ".png";
+                    return "http://a.basemaps.cartocdn.com/light_all/" + zoom + "/" + x + "/" + coord.y + ".png";
                 },
                 tileSize: new google.maps.Size(256, 256),
                 name: "OpenStreetMap",
